@@ -7,25 +7,44 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FlowTabTest {
+    private fun originalTabs(
+        order: List<Int>,
+        visibility: NavigationVisibility,
+    ) = visibleFlowTabs(order, visibility, musicOnly = false)
+
+    private fun originalDefaultTab(
+        preferredId: Int,
+        order: List<Int>,
+        visibility: NavigationVisibility,
+    ) = resolveDefaultFlowTab(preferredId, order, visibility, musicOnly = false)
+
+    @Test fun musicOnlyKeepsFourMusicDestinations() {
+        assertEquals(
+            listOf(FlowTab.Music, FlowTab.Search, FlowTab.Library, FlowTab.Downloads),
+            visibleFlowTabs(emptyList(), NavigationVisibility(), musicOnly = true),
+        )
+        assertEquals(FlowTab.Music, resolveDefaultFlowTab(FlowTab.Home.id, emptyList(), NavigationVisibility(), musicOnly = true))
+    }
+
     @Test
     fun hiddenHomeFallsBackToFirstVisibleDestination() {
         val visibility = NavigationVisibility(home = false, shorts = false, music = false)
 
         val resolved =
-            resolveDefaultFlowTab(
+            originalDefaultTab(
                 preferredId = FlowTab.Home.id,
                 order = listOf(0, 4, 3, 1, 2, 5, 6),
                 visibility = visibility,
             )
 
         assertEquals(FlowTab.Library, resolved)
-        assertFalse(visibleFlowTabs(listOf(0, 4, 3), visibility).contains(FlowTab.Home))
+        assertFalse(originalTabs(listOf(0, 4, 3), visibility).contains(FlowTab.Home))
     }
 
     @Test
     fun reEnabledHomeRestoresAHomeDefault() {
         val resolved =
-            resolveDefaultFlowTab(
+            originalDefaultTab(
                 preferredId = FlowTab.Home.id,
                 order = listOf(3, 0, 4),
                 visibility = NavigationVisibility(home = true),
@@ -37,7 +56,7 @@ class FlowTabTest {
     @Test
     fun tabsFollowTheSavedOrder() {
         val tabs =
-            visibleFlowTabs(
+            originalTabs(
                 order = listOf(4, 3, 2, 1, 0),
                 visibility = NavigationVisibility(),
             )
@@ -51,7 +70,7 @@ class FlowTabTest {
     @Test
     fun aSavedOrderMissingNewerTabsAppendsThemInDefaultOrder() {
         val tabs =
-            visibleFlowTabs(
+            originalTabs(
                 order = listOf(3, 0),
                 visibility = NavigationVisibility(search = true, categories = true),
             )
@@ -72,7 +91,7 @@ class FlowTabTest {
 
     @Test
     fun unknownPersistedIdsAreIgnored() {
-        val tabs = visibleFlowTabs(order = listOf(42, 4, -1, 3), visibility = NavigationVisibility())
+        val tabs = originalTabs(order = listOf(42, 4, -1, 3), visibility = NavigationVisibility())
 
         assertEquals(FlowTab.Library, tabs.first())
         assertEquals(tabs.distinct(), tabs)
@@ -110,13 +129,13 @@ class FlowTabTest {
                 )
 
             for (order in orders) {
-                val visible = visibleFlowTabs(order, visibility)
+                val visible = originalTabs(order, visibility)
                 assertTrue(
                     "no unhideable root destination for $visibility / $order",
                     visible.contains(FlowTab.Subscriptions) || visible.contains(FlowTab.Library),
                 )
 
-                val resolved = resolveDefaultFlowTab(FlowTab.Home.id, order, visibility)
+                val resolved = originalDefaultTab(FlowTab.Home.id, order, visibility)
                 assertTrue(
                     "resolved default $resolved is not visible for $visibility / $order",
                     visible.contains(resolved),
@@ -127,10 +146,10 @@ class FlowTabTest {
 
     @Test
     fun theDownloadsTabIsOffUntilTurnedOn() {
-        assertFalse(FlowTab.Downloads in visibleFlowTabs(DEFAULT_NAV_TAB_ORDER, NavigationVisibility()))
+        assertFalse(FlowTab.Downloads in originalTabs(DEFAULT_NAV_TAB_ORDER, NavigationVisibility()))
         assertEquals(
             FlowTab.Downloads,
-            visibleFlowTabs(listOf(3, 0), NavigationVisibility(downloads = true)).last(),
+            originalTabs(listOf(3, 0), NavigationVisibility(downloads = true)).last(),
         )
     }
 }

@@ -42,6 +42,7 @@ class SaveSongViewModel
     @Inject
     constructor(
         private val repository: PlaylistRepository,
+        private val musicBrain: io.github.aedev.flow.data.recommendation.music.MusicBrainEngine,
     ) : ViewModel() {
         val playlists: StateFlow<List<PlaylistInfo>> =
             repository
@@ -76,6 +77,7 @@ class SaveSongViewModel
                         repository.removeVideoFromPlaylist(playlistId, track.videoId)
                     } else {
                         repository.addVideoToPlaylist(playlistId, track.toPlaylistVideo(System.currentTimeMillis()))
+                        musicBrain.onPlaylistSaved(track)
                     }
                 }.onFailure {
                     _savedIds.update { ids -> if (wasSaved) ids + playlistId else ids - playlistId }
@@ -92,6 +94,7 @@ class SaveSongViewModel
                 val playlistId = UUID.randomUUID().toString()
                 repository.createPlaylist(playlistId, name, description, isPrivate = false, isMusic = true)
                 repository.addVideoToPlaylist(playlistId, track.toPlaylistVideo(System.currentTimeMillis()))
+                musicBrain.onPlaylistSaved(track)
                 _savedIds.update { it + playlistId }
             }
         }

@@ -110,8 +110,17 @@ class MusicViewModel
             )
 
         val uiState: StateFlow<MusicUiState> =
-            combine(_uiState, homeChipFeed.page, musicBrain.hiddenArtists) { state, chipPage, hidden ->
-                state.copy(homeChipPage = chipPage).withHiddenArtists(hidden).withUniqueLazyContent()
+            combine(
+                _uiState,
+                homeChipFeed.page,
+                musicBrain.hiddenArtists,
+                musicBrain.hiddenTracks,
+            ) { state, chipPage, hidden, hiddenTracks ->
+                state
+                    .copy(homeChipPage = chipPage)
+                    .withHiddenArtists(hidden)
+                    .withHiddenTrackIds(hiddenTracks)
+                    .withUniqueLazyContent()
             }.flowOn(PerformanceDispatcher.parsing)
                 .stateIn(
                     scope = viewModelScope,

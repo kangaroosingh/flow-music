@@ -4864,4 +4864,39 @@
     <string name="keyboard_shortcut_faster">Faster</string>
     <string name="keyboard_shortcut_slower">Slower</string>
     <string name="session_lyric_repeated">%1$s (x%2$d)</string>
+
+    <string name="fm_app_name">Flow Music</string>
+    <string name="fm_home">Home</string>
+    <string name="fm_taste">Your music taste</string>
+    <string name="fm_local_notice">Your listening history and personalised ranking stay on this phone. Music catalogues are fetched online.</string>
+    <string name="fm_languages">Music languages</string>
+    <string name="fm_punjabi">Punjabi</string>
+    <string name="fm_hindi">Hindi</string>
+    <string name="fm_english">English</string>
+    <string name="fm_urdu">Urdu</string>
+    <string name="fm_era">Preferred era</string>
+    <string name="fm_all_eras">All eras</string>
+    <string name="fm_classics">Classics · over 10 years old</string>
+    <string name="fm_recent">Recent · last 10 years</string>
+    <string name="fm_discovery">Familiar favourites ↔ discovery</string>
+    <string name="fm_mix">Target mix: %1$d%% familiar · %2$d%% related · %3$d%% wider discovery. Available songs may change the balance.</string>
+    <string name="fm_favourite_artists">Choose favourite artists</string>
+    <string name="fm_improved">Improved recommendations</string>
+    <string name="fm_original">Original Flow ranking</string>
+    <string name="fm_feedback_help">Not interested hides only that song. Artist blocking is a separate choice. Downloads are never deleted by feedback.</string>
+    <string name="fm_disliked">Hidden songs</string>
+    <string name="fm_undo">Undo</string>
+    <string name="fm_stats">Local listening comparison</string>
+    <string name="fm_metrics">%1$s: %2$d starts · %3$d completions · %4$d early skips · %5$d discovery likes · %6$d repeats</string>
+    <string name="fm_reset">Reset recommendation learning</string>
+    <string name="fm_reset_confirm">Clear recommendation learning, feedback and comparison counters? Your playlists, downloads and favourite-artist choices stay.</string>
+    <string name="fm_save_listen">Save and listen</string>
+    <string name="fm_because_artist">Because you listen to %1$s</string>
+    <string name="fm_related_pick">Related to your favourite artists</string>
+    <string name="fm_discovery_pick">A discovery pick for you</string>
+    <string name="fm_navigation_help">Flow Music uses Home, Search, Library and Downloads. Video feeds and Shorts are not part of this app.</string>
+
+    <string name="fm_dislike">Dislike song</string>
+    <string name="fm_dislike_desc">Hide this recording from recommendations until you undo it</string>
+    <string name="fm_dislike_applied">%1$s hidden. Undo in Your music taste.</string>
 </resources>

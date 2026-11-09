@@ -98,7 +98,7 @@ object YouTubeMusicService {
     /**
      * Fetch new releases using curated playlists
      */
-    suspend fun fetchNewReleases(limit: Int = 30): List<MusicTrack> = searchMusic("new music releases 2025", limit)
+    suspend fun fetchNewReleases(limit: Int = 30): List<MusicTrack> = searchMusic("new music releases ${java.time.Year.now().value}", limit)
 
     /**
      * Search for music tracks on YouTube

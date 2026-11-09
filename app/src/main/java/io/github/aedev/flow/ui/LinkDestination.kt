@@ -34,43 +34,70 @@ internal fun linkTextOf(intent: Intent): String? =
  * Null for a link Flow has no page for: a search, and a mix, which YouTube builds around a video
  * and cannot be browsed on its own.
  */
-internal fun linkDestination(link: YouTubeLink): LinkDestination? =
+internal fun linkDestination(
+    link: YouTubeLink,
+    musicOnly: Boolean = io.github.aedev.flow.BuildConfig.MUSIC_ONLY,
+): LinkDestination? =
     when (link) {
-        is YouTubeLink.Video -> videoDestination(link)
-        is YouTubeLink.Short -> LinkDestination.Short(link.id)
-        else -> pageRoute(link)?.let(LinkDestination::Page)
+        is YouTubeLink.Video -> {
+            videoDestination(link, musicOnly)
+        }
+
+        is YouTubeLink.Short -> {
+            if (musicOnly) {
+                LinkDestination.Page(
+                    musicPlayerRoute(link.id),
+                )
+            } else {
+                LinkDestination.Short(link.id)
+            }
+        }
+
+        else -> {
+            pageRoute(link, musicOnly)?.let(LinkDestination::Page)
+        }
     }
 
 /**
  * A video linked from inside a playlist plays with that playlist as its queue. The account's own
  * lists cannot be read without the account, and a mix link means its video, so those play alone.
  */
-private fun videoDestination(link: YouTubeLink.Video): LinkDestination {
+private fun videoDestination(
+    link: YouTubeLink.Video,
+    musicOnly: Boolean,
+): LinkDestination {
     val playlistId = link.playlistId?.takeUnless { it in ACCOUNT_LISTS }
     return when {
-        link.isMusic -> LinkDestination.Page(musicPlayerRoute(link.id, playlistId))
+        link.isMusic || musicOnly -> LinkDestination.Page(musicPlayerRoute(link.id, playlistId))
         playlistId == null || isMix(playlistId) -> LinkDestination.Video(link.id)
         else -> LinkDestination.Page(linkedPlaylistRoute(playlistId, link.id), playsVideo = true)
     }
 }
 
-private fun pageRoute(link: YouTubeLink): String? =
+private fun pageRoute(
+    link: YouTubeLink,
+    musicOnly: Boolean,
+): String? =
     when (link) {
         is YouTubeLink.Video, is YouTubeLink.Short, is YouTubeLink.Search -> null
-        is YouTubeLink.Playlist -> playlistRoute(link)
+        is YouTubeLink.Playlist -> playlistRoute(link, musicOnly)
         is YouTubeLink.Album -> musicCollectionRoute(link.browseId)
-        is YouTubeLink.Channel -> if (link.isMusic) musicArtistRoute(link.id) else youtubeChannelRoute(link.id)
-        is YouTubeLink.ChannelHandle -> youtubeChannelRoute(link.handle)
-        is YouTubeLink.LegacyChannel -> youtubeChannelRoute(link.url)
+        is YouTubeLink.Channel -> if (link.isMusic || musicOnly) musicArtistRoute(link.id) else youtubeChannelRoute(link.id)
+        is YouTubeLink.ChannelHandle -> if (musicOnly) null else youtubeChannelRoute(link.handle)
+        is YouTubeLink.LegacyChannel -> if (musicOnly) null else youtubeChannelRoute(link.url)
     }
 
-private fun playlistRoute(link: YouTubeLink.Playlist): String? =
+private fun playlistRoute(
+    link: YouTubeLink.Playlist,
+    musicOnly: Boolean,
+): String? =
     when {
+        musicOnly && link.id in setOf("LL", "WL") -> null
         link.id == "LL" -> "playlist/${PlaylistRepository.LIKED_VIDEOS_ID}"
         link.id == "WL" -> "playlist/${PlaylistRepository.WATCH_LATER_ID}"
         link.id == "LM" -> musicCollectionRoute(PlaylistRepository.LIKED_MUSIC_ID)
         isMix(link.id) -> null
-        link.isMusic -> musicCollectionRoute(link.id)
+        link.isMusic || musicOnly -> musicCollectionRoute(link.id)
         else -> "playlist/${link.id}"
     }
 

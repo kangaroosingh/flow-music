@@ -243,7 +243,7 @@ private fun playbackRows(
                 onDismiss()
             },
         )
-        if (!LocalMediaIds.isLocal(track.videoId)) {
+        if (!LocalMediaIds.isLocal(track.videoId) && !io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
             add(
                 actionRow(
                     "watch_video",
@@ -339,11 +339,11 @@ private fun feedbackRows(
         actionRow(
             "not_interested",
             Icons.Outlined.ThumbDown,
-            stringResource(R.string.not_interested),
-            stringResource(R.string.not_interested_desc),
+            stringResource(R.string.fm_dislike),
+            stringResource(R.string.fm_dislike_desc),
         ) {
             viewModel.notInterested(track)
-            quickActions.announce(R.string.feedback_not_interested_applied, artistName)
+            quickActions.announce(R.string.fm_dislike_applied, track.title)
             onDismiss()
         },
         actionRow(

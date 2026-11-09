@@ -45,6 +45,7 @@ class MusicBrainEngine
     constructor(
         @ApplicationContext private val appContext: Context,
         private val backfill: MusicBrainBackfill,
+        val personalization: MusicPersonalization,
     ) {
         companion object {
             private const val TAG = "MusicBrainEngine"
@@ -113,6 +114,7 @@ class MusicBrainEngine
             playedFraction: Double,
             genre: String? = null,
             playedMs: Long = 0L,
+            manualSkip: Boolean = false,
         ) {
             if (track.videoId.isBlank() || LocalMediaIds.isLocal(track.videoId)) return
             val pct = playedFraction.coerceIn(0.0, 1.0)
@@ -129,6 +131,7 @@ class MusicBrainEngine
             }
             // Sub-milestone sessions teach the brain nothing, but their listening
             // time still belongs in the recap ledger's minutes.
+            personalization.onListen(track, pct, genre, manualSkip)
             val crossed = MusicBrainLearn.newlyCrossed(0.0, pct)
             val now = System.currentTimeMillis()
             mutex.withLock {
@@ -173,10 +176,11 @@ class MusicBrainEngine
             playedFraction: Double,
             genre: String? = null,
             playedMs: Long = 0L,
+            manualSkip: Boolean = false,
         ) {
             saveScope.launch {
                 try {
-                    onListenSession(track, playedFraction, genre, playedMs)
+                    onListenSession(track, playedFraction, genre, playedMs, manualSkip)
                 } catch (e: Exception) {
                     Log.w(TAG, "Listen session failed: ${e.message}")
                 }
@@ -189,6 +193,7 @@ class MusicBrainEngine
             if (playerPreferences.isDeepFlowCurrentlyActive()) return
             ensureInitialized()
 
+            personalization.liked(track, mutex.withLock { track.primaryArtistKey() !in brain.seenArtists })
             val signal = track.toMusicSignal(0.0).copy(isExplicitLike = true)
             if (signal.artistKey.isEmpty()) return
             val now = System.currentTimeMillis()
@@ -223,19 +228,38 @@ class MusicBrainEngine
             tracks: List<MusicTrack>,
             surface: String,
         ): List<MusicTrack> {
-            if (tracks.isEmpty()) return tracks
             ensureInitialized()
-            return withContext(Dispatchers.Default) {
+            val artists =
                 mutex.withLock {
-                    if (tracks.size == 1) {
-                        val key = tracks[0].primaryArtistKey()
-                        if (brain.isArtistBlocked(key)) emptyList() else tracks
-                    } else {
-                        val inputs = tracks.map { MusicRankInput(trackId = it.videoId, artistKey = it.primaryArtistKey()) }
-                        MusicBrainRanker.rank(brain, inputs, surface, System.currentTimeMillis()).map { tracks[it] }
-                    }
+                    brain
+                        .topArtists(
+                            3,
+                        ).mapNotNull { brain.artistAffinity[it.first]?.display?.takeIf(String::isNotBlank) }
                 }
+            val augmented = personalization.augment(tracks, surface, artists)
+            return withContext(Dispatchers.Default) { mutex.withLock { personalization.rank(augmented, brain, surface) } }
+        }
+
+        val hiddenTracks get() = personalization.hiddenTracks
+
+        suspend fun dislikeSong(track: MusicTrack) = personalization.dislike(track)
+
+        fun recordMusicStart(id: String) {
+            if (id.isBlank() || LocalMediaIds.isLocal(id)) return
+            saveScope.launch {
+                if (!playerPreferences.isDeepFlowCurrentlyActive()) personalization.onStart(id)
             }
+        }
+
+        suspend fun onPlaylistSaved(track: MusicTrack) {
+            if (LocalMediaIds.isLocal(track.videoId) || playerPreferences.isDeepFlowCurrentlyActive()) return
+            ensureInitialized()
+            mutex.withLock {
+                val affinity = brain.artistAffinity.getOrPut(track.primaryArtistKey()) { MusicAffinity() }
+                affinity.score = (affinity.score + 0.05).coerceAtMost(1.0)
+                affinity.display = track.artist
+            }
+            scheduleDebouncedSave()
         }
 
         /**
@@ -500,8 +524,8 @@ class MusicBrainEngine
 
         suspend fun resetBrain() {
             mutex.withLock {
-                brain = MusicBrain()
-                // Leave backfilled=false so the warm start can run again, matching desktop reset.
+                brain = MusicBrain().apply { backfilled = true }
+                // A reset must not replay the old listening history on the next launch.
                 lastCounted = null
                 isInitialized = true
                 refreshHiddenArtistsLocked()
@@ -570,58 +594,3 @@ class MusicBrainEngine
                 statsStorage.save(ledger)
             }
     }
-
-/** Primary-artist key for a UI track: browseId when known, lowercased name otherwise. */
-internal fun MusicTrack.primaryArtistKey(): String {
-    val primary = artists.firstOrNull()
-    return musicArtistKey(primary?.id ?: channelId.takeIf { it.isNotBlank() }, primary?.name ?: artist)
-}
-
-/**
- * Matches on both key forms because [hidden] carries both: a track's id key when
- * it has one, and always its lowercased display name. EVERY credited artist is
- * tested, not just the primary — a blocked artist's collabs and album cards are
- * still that artist's output to the user.
- */
-internal fun MusicTrack.isHiddenArtist(hidden: Set<String>): Boolean {
-    if (hidden.isEmpty()) return false
-    if (primaryArtistKey() in hidden) return true
-    for (credited in artists) {
-        if (musicArtistKey(credited.id, credited.name) in hidden) return true
-        val creditedName = credited.name.trim().lowercase()
-        if (creditedName.isNotEmpty() && creditedName in hidden) return true
-    }
-    val name = (artists.firstOrNull()?.name ?: artist).trim().lowercase()
-    return name.isNotEmpty() && name in hidden
-}
-
-/**
- * Feedback filter for album/playlist cards. Their [MusicPlaylist.author] is a
- * display subtitle (album cards carry the release year there), so matching uses
- * the structured [MusicPlaylist.authorId]/[MusicPlaylist.authorName] first and
- * falls back to the subtitle only when it is all we have.
- */
-internal fun MusicPlaylist.isHiddenAuthor(hidden: Set<String>): Boolean {
-    if (hidden.isEmpty()) return false
-    if (musicArtistKey(authorId, authorName ?: author) in hidden) return true
-    return listOf(authorName, author).any { !it.isNullOrBlank() && it.trim().lowercase() in hidden }
-}
-
-internal fun ArtistDetails.isHiddenArtist(hidden: Set<String>): Boolean {
-    if (hidden.isEmpty()) return false
-    if (musicArtistKey(channelId.takeIf { it.isNotBlank() }, name) in hidden) return true
-    val lowered = name.trim().lowercase()
-    return lowered.isNotEmpty() && lowered in hidden
-}
-
-internal fun MusicTrack.toMusicSignal(pct: Double): MusicSignal {
-    val primary = artists.firstOrNull()
-    return MusicSignal(
-        trackId = videoId,
-        artistKey = primaryArtistKey(),
-        artistDisplay = (primary?.name ?: artist).trim(),
-        percentPlayed = pct,
-        title = title,
-        thumbnail = thumbnailUrl,
-    )
-}

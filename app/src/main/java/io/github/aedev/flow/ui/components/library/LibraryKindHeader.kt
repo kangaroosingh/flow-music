@@ -59,13 +59,27 @@ internal fun LibraryKindHeader(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             search(Modifier.weight(1f))
-            FlowConnectedToggleGroup(options, selectedKind, onKindSelected, Modifier.width(KindSwitchWidth))
+            if (!io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
+                FlowConnectedToggleGroup(
+                    options,
+                    selectedKind,
+                    onKindSelected,
+                    Modifier.width(KindSwitchWidth),
+                )
+            }
             trailing?.invoke()
         }
     } else {
         Column(modifier) {
             search(Modifier.padding(horizontal = 16.dp).fillMaxWidth())
-            FlowConnectedToggleGroup(options, selectedKind, onKindSelected, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            if (!io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
+                FlowConnectedToggleGroup(
+                    options,
+                    selectedKind,
+                    onKindSelected,
+                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
         }
     }
 }

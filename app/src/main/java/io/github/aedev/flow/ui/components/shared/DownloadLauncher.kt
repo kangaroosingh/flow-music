@@ -128,7 +128,11 @@ internal object DownloadLauncher {
         video: Video,
     ) {
         promptStoragePermissionIfNeeded(context)
-        submit(context, video.toDownloadRequest(targetHeight = 0), context.getString(R.string.ui_started_download, video.title))
+        submit(
+            context,
+            video.toDownloadRequest(targetHeight = 0, audioOnly = io.github.aedev.flow.BuildConfig.MUSIC_ONLY),
+            context.getString(R.string.ui_started_download, video.title),
+        )
     }
 
     /** The toast waits for the queue's answer, because the queue can decline the request. */

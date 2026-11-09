@@ -17,7 +17,7 @@ class LinkDestinationTest {
     private val video = "dQw4w9WgXcQ"
     private val channel = "UCXuqSBlHAE6Xw-yeJA0Tunw"
 
-    private fun destinationOf(link: String): LinkDestination? = parseYouTubeLink(link)?.let(::linkDestination)
+    private fun destinationOf(link: String): LinkDestination? = parseYouTubeLink(link)?.let { linkDestination(it, musicOnly = false) }
 
     private fun page(route: String) = LinkDestination.Page(route)
 
@@ -104,5 +104,19 @@ class LinkDestinationTest {
         )
         assertNull(linkTextOf(Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_TEXT, url)))
         assertNull(linkTextOf(Intent("io.github.aedev.flow.widget.OPEN", Uri.parse("flow://widget/video/$video"))))
+    }
+
+    @Test
+    fun `music fork opens videos shorts and public playlists as audio`() {
+        assertEquals(page("musicPlayer/$video"), linkDestination(parseYouTubeLink("https://youtu.be/$video")!!))
+        assertEquals(page("musicPlayer/$video"), linkDestination(parseYouTubeLink("https://youtube.com/shorts/$video")!!))
+        assertEquals(page("musicPlaylist/PLabcdef"), linkDestination(parseYouTubeLink("https://youtube.com/playlist?list=PLabcdef")!!))
+    }
+
+    @Test
+    fun `music fork does not expose private video lists or video channel feeds`() {
+        assertNull(linkDestination(parseYouTubeLink("https://youtube.com/playlist?list=WL")!!))
+        assertNull(linkDestination(parseYouTubeLink("https://youtube.com/@example")!!))
+        assertEquals(page("artist/$channel"), linkDestination(parseYouTubeLink("https://youtube.com/channel/$channel")!!))
     }
 }

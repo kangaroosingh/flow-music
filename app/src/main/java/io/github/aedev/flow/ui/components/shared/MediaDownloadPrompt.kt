@@ -48,7 +48,14 @@ fun MediaDownloadPrompt(
 
         askEveryTime == false -> {
             LaunchedEffect(video.id) {
-                downloadDefaultChoice(context, prefs, video, videoFormats, audioFormats, subtitles)
+                downloadDefaultChoice(
+                    context,
+                    prefs,
+                    video,
+                    if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) emptyList() else videoFormats,
+                    audioFormats,
+                    subtitles,
+                )
                 latestOnDismiss()
             }
         }
@@ -56,7 +63,7 @@ fun MediaDownloadPrompt(
         style == DownloadDialogStyle.COMPACT -> {
             MediaDownloadSheetCompact(
                 streamSizes = streamSizes,
-                innerTubeVideoFormats = videoFormats,
+                innerTubeVideoFormats = if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) emptyList() else videoFormats,
                 innerTubeAudioFormats = audioFormats,
                 video = video,
                 currentPlayingHeight = currentPlayingHeight,
@@ -70,7 +77,7 @@ fun MediaDownloadPrompt(
         else -> {
             MediaDownloadSheet(
                 streamSizes = streamSizes,
-                innerTubeVideoFormats = videoFormats,
+                innerTubeVideoFormats = if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) emptyList() else videoFormats,
                 innerTubeAudioFormats = audioFormats,
                 video = video,
                 subtitles = subtitles,

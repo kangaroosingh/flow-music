@@ -43,6 +43,10 @@ class BaselineProfileGenerator {
             pressHome()
             startActivityAndWait { it.putExtra(BYPASS_ONBOARDING, true) }
             device.waitForIdle(UI_SETTLE_MS)
+            if (device.hasObject(By.text("Your music taste"))) {
+                device.pressBack()
+                device.waitForIdle(UI_SETTLE_MS)
+            }
 
             flingFeed(Direction.DOWN, times = 3)
             flingFeed(Direction.UP, times = 1)

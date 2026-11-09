@@ -69,7 +69,10 @@ class LocalMediaViewModel
         private val preferences: LocalMediaPreferences,
         viewHistory: ViewHistory,
     ) : ViewModel() {
-        private val selection = MutableStateFlow(LocalMediaSelection())
+        private val selection =
+            MutableStateFlow(
+                LocalMediaSelection(kind = if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) MediaKind.Music else MediaKind.Videos),
+            )
 
         private val playback =
             viewHistory

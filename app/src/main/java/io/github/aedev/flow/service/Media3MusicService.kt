@@ -611,7 +611,7 @@ class Media3MusicService : MediaLibraryService() {
                         videoSwitch.consumeSwap(mediaItem?.mediaId) &&
                             reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
                     if (!versionSwap) {
-                        finalizeListenSession()
+                        finalizeListenSession(reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK)
                         startListenSession(mediaItem?.mediaId)
                         if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) failureStreak.reset()
                     }
@@ -771,6 +771,7 @@ class Media3MusicService : MediaLibraryService() {
                     eventTime: AnalyticsListener.EventTime,
                     error: PlaybackException,
                 ) {
+                    if (eventTime.windowIndex == player.currentMediaItemIndex) learnFailed = true
                     handlePlayerError(error, eventTime.windowIndex)
                 }
             },
@@ -784,6 +785,8 @@ class Media3MusicService : MediaLibraryService() {
     // pause-free and seek-immune; a repeat loop finalizes and restarts a session,
     // so relistens still count once each.
 
+    private var learnFailed = false
+    private var learnManualSkipRequested = false
     private var learnMediaId: String? = null
     private var learnTrack: MusicTrack? = null
     private var learnGenre: String? = null
@@ -862,6 +865,9 @@ class Media3MusicService : MediaLibraryService() {
     }
 
     private fun startListenSession(mediaId: String?) {
+        learnFailed = false
+        learnManualSkipRequested = false
+        mediaId?.let { musicBrain.recordMusicStart(it) }
         learnMediaId = mediaId?.let(videoSwitch::listenId)
         // Pin the track now: by finalize time a new playlist may have replaced the
         // queue and the outgoing track would no longer resolve.
@@ -886,7 +892,7 @@ class Media3MusicService : MediaLibraryService() {
         }
     }
 
-    private fun finalizeListenSession() {
+    private fun finalizeListenSession(manual: Boolean = false) {
         closePlayingSegment()
         val mediaId = learnMediaId
         val pinnedTrack = learnTrack
@@ -926,7 +932,14 @@ class Media3MusicService : MediaLibraryService() {
         Log.d(TAG, "listen finalize: $mediaId playedMs=$playedMs pct=${playedMs.toDouble() / durationMs}")
         // Engine-scoped, NOT lifecycleScope: the finalize from onDestroy runs after
         // this service's scope is already cancelled, and the session must still land.
-        musicBrain.onListenSessionAsync(track, playedMs.toDouble() / durationMs, pinnedGenre, playedMs)
+        val earlySkip =
+            io.github.aedev.flow.data.recommendation.music.MusicRecommendationPolicy.earlyManualSkip(
+                manual || learnManualSkipRequested,
+                learnFailed,
+                playedMs,
+                playedMs.toDouble() / durationMs,
+            )
+        musicBrain.onListenSessionAsync(track, playedMs.toDouble() / durationMs, pinnedGenre, playedMs, earlySkip)
         if (!alreadyScrobbled) scrobbler.onListened(track, durationMs, playedMs, startedAtMs)
         widgetContentSync.get().run {
             request(io.github.aedev.flow.widget.core.refresh.WidgetContentKey.ON_REPEAT)
@@ -2062,6 +2075,7 @@ class Media3MusicService : MediaLibraryService() {
             }
 
             if (customCommand.customAction == ACTION_SKIP_TO) {
+                if (args.getInt(EXTRA_SKIP_INDEX) != player.currentMediaItemIndex) learnManualSkipRequested = true
                 crossfader?.skipTo(args.getInt(EXTRA_SKIP_INDEX), args.getString(EXTRA_SKIP_MEDIA_ID).orEmpty())
                 return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
             }

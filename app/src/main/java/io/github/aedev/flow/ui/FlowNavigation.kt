@@ -58,7 +58,7 @@ fun NavGraphBuilder.flowAppGraph(
     currentRoute: MutableState<String>,
     playerSheetState: PlayerDraggableState,
     musicPlayerSheetState: MusicPlayerSheetState,
-    homeViewModel: HomeViewModel,
+    homeViewModel: HomeViewModel?,
     playerViewModel: VideoPlayerViewModel,
     playerUiStateResult: State<VideoPlayerUiState>,
     playerVisibleState: MutableState<Boolean>,
@@ -85,28 +85,30 @@ fun NavGraphBuilder.flowAppGraph(
 
     composable("home") {
         currentRoute.value = "home"
-        HomeScreen(
-            onVideoClick = { video ->
-                navController.openVideoOrShorts(video, disableShortsPlayer) {
-                    playerViewModel.playVideo(it)
-                }
-            },
-            onShortClick = { source ->
-                navController.openShortsOrPlayer(source, disableShortsPlayer)
-            },
-            onSearchClick = {
-                navController.navigate("search")
-            },
-            onOpenSettings = { target -> navController.navigate("settings?target=${target.encode()}") },
-            onNavigateToHistory = {
-                navController.navigate("history")
-            },
-            onOpenShortsFeed = {
-                navController.openShorts(ShortsQueueSource.Feed)
-            },
-            onPlayMix = { videos, title -> playerViewModel.playPlaylist(videos, 0, title, false) },
-            viewModel = homeViewModel,
-        )
+        if (!io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
+            HomeScreen(
+                onVideoClick = { video ->
+                    navController.openVideoOrShorts(video, disableShortsPlayer) {
+                        playerViewModel.playVideo(it)
+                    }
+                },
+                onShortClick = { source ->
+                    navController.openShortsOrPlayer(source, disableShortsPlayer)
+                },
+                onSearchClick = {
+                    navController.navigate("search")
+                },
+                onOpenSettings = { target -> navController.navigate("settings?target=${target.encode()}") },
+                onNavigateToHistory = {
+                    navController.navigate("history")
+                },
+                onOpenShortsFeed = {
+                    navController.openShorts(ShortsQueueSource.Feed)
+                },
+                onPlayMix = { videos, title -> playerViewModel.playPlaylist(videos, 0, title, false) },
+                viewModel = requireNotNull(homeViewModel),
+            )
+        }
     }
 
     composable(UPDATE_ROUTE) {

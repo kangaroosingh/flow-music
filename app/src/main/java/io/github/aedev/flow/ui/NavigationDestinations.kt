@@ -15,6 +15,7 @@ internal fun flowTabForDestination(
 ): FlowTab? =
     when (route) {
         null -> null
+        "musicSearch?query={query}" -> FlowTab.Search.takeIf { io.github.aedev.flow.BuildConfig.MUSIC_ONLY }
         SHORTS_ROUTE_PATTERN -> FlowTab.Shorts.takeIf { ShortsQueueSource.decode(shortsSourceArg) == ShortsQueueSource.Feed }
         else -> FlowTab.entries.firstOrNull { it.route == route }
     }

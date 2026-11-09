@@ -33,6 +33,12 @@ internal fun NavigationBarScreen(
     highlight: String?,
     viewModel: AppearanceViewModel = hiltViewModel(),
 ) {
+    if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
+        SettingsPage(title = stringResource(R.string.settings_navigation_bar_title), onBack = onBack, highlight = highlight) {
+            item("music.navigation") { androidx.compose.material3.Text(stringResource(R.string.fm_navigation_help)) }
+        }
+        return
+    }
     val visibility by viewModel.navigationVisibility.collectAsStateWithLifecycle()
     val shortsContent by viewModel.shortsContent.collectAsStateWithLifecycle()
     val hideOnScroll by viewModel.hideNavOnScroll.collectAsStateWithLifecycle()

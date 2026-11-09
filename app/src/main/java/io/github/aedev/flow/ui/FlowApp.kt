@@ -110,7 +110,7 @@ fun FlowApp(
     val playerUiState by playerUiStateResult
 
     val preferences = remember { PlayerPreferences(context) }
-    val isHomeNavigationEnabled by preferences.homeNavigationEnabled.collectAsState(initial = true)
+    val isHomeNavigationEnabled = !io.github.aedev.flow.BuildConfig.MUSIC_ONLY
     val isShortsNavigationEnabled by preferences.effectiveShortsNavigationEnabled.collectAsState(initial = true)
     val isMusicNavigationEnabled by preferences.musicNavigationEnabled.collectAsState(initial = true)
     val isSearchNavigationEnabled by preferences.searchNavigationEnabled.collectAsState(initial = false)
@@ -121,7 +121,7 @@ fun FlowApp(
     val defaultNavTabIndex by preferences.defaultNavTabIndex.collectAsState(initial = 0)
     val subscriptionRefreshOnStartup by preferences.subscriptionRefreshOnStartup.collectAsState(initial = false)
     val bottomNavHideOnScroll by preferences.bottomNavHideOnScroll.collectAsState(initial = true)
-    val searchShowsNavBar by preferences.searchShowsNavBar.collectAsState(initial = false)
+    val searchShowsNavBar = true
     val sleepTimerCloseAppOnExpiry by preferences.sleepTimerCloseAppOnExpiry.collectAsState(
         initial = SleepTimerManager.preferredCloseAppOnExpiry,
     )
@@ -163,7 +163,7 @@ fun FlowApp(
         // A viewer who is past onboarding never waits for the engine here; everyone else asks it (#1301).
         needsOnboarding =
             when {
-                bypass || preferences.onboardingDone.first() -> {
+                io.github.aedev.flow.BuildConfig.MUSIC_ONLY || bypass || preferences.onboardingDone.first() -> {
                     false
                 }
 
@@ -469,9 +469,16 @@ fun FlowApp(
                                 .nestedScroll(navScrollState.nestedScrollConnection),
                     ) {
                         if (needsOnboarding != null) {
-                            val homeViewModel: HomeViewModel = hiltViewModel(activity!!)
+                            val homeViewModel: HomeViewModel? =
+                                if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) {
+                                    null
+                                } else {
+                                    hiltViewModel(
+                                        activity!!,
+                                    )
+                                }
                             LaunchedEffect(homeViewModel) {
-                                homeViewModel.initialize(context.applicationContext)
+                                homeViewModel?.initialize(context.applicationContext)
                             }
 
                             ProvideFlowGlobalActions(

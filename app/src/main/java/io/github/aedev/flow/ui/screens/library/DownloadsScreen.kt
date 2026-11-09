@@ -117,7 +117,9 @@ fun DownloadsScreen(
     DownloadsUndoEffect(viewModel, snackbarHostState)
     val deletePrompt = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { }
     LaunchedEffect(viewModel) { viewModel.deleteConsent.collect { deletePrompt.launch(IntentSenderRequest.Builder(it).build()) } }
-    var selectedKind by rememberSaveable { mutableStateOf(MediaKind.Videos) }
+    var selectedKind by rememberSaveable {
+        mutableStateOf(if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) MediaKind.Music else MediaKind.Videos)
+    }
     var pendingDeletion by remember { mutableStateOf<PendingDeletion?>(null) }
     var removeIncompleteOf by remember { mutableStateOf<MediaKind?>(null) }
     var removingCollection by remember { mutableStateOf<DownloadCollectionSummary?>(null) }

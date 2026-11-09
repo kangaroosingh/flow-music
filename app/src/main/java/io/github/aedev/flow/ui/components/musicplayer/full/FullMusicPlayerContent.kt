@@ -90,7 +90,7 @@ internal fun FullMusicPlayerContent(
     val sheets = remember { FullPlayerSheetState() }
     var previewDirection by remember { mutableStateOf<SkipDirection?>(null) }
     val musicPlayer by EnhancedMusicPlayerManager.playerInstance.collectAsState()
-    val videoSwitchEnabled by videoSwitch.isEnabled.collectAsState()
+    val videoSwitchEnabled = false
     val videoMode by videoSwitch.videoMode.collectAsState()
     val videoLoading by videoSwitch.isLoading.collectAsState()
     var videoShowing by remember { mutableStateOf(false) }

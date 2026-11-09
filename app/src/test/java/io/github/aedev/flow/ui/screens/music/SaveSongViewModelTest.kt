@@ -43,7 +43,7 @@ class SaveSongViewModelTest {
     @Test
     fun `a playlist that already holds the song shows as saved`() =
         runTest {
-            val viewModel = SaveSongViewModel(repository)
+            val viewModel = SaveSongViewModel(repository, io.mockk.mockk(relaxed = true))
             viewModel.loadMembership("song")
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -53,7 +53,7 @@ class SaveSongViewModelTest {
     @Test
     fun `toggling a saved playlist removes the song instead of adding it again`() =
         runTest {
-            val viewModel = SaveSongViewModel(repository)
+            val viewModel = SaveSongViewModel(repository, io.mockk.mockk(relaxed = true))
             viewModel.loadMembership("song")
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -68,7 +68,7 @@ class SaveSongViewModelTest {
     @Test
     fun `toggling an unsaved playlist adds the song as music`() =
         runTest {
-            val viewModel = SaveSongViewModel(repository)
+            val viewModel = SaveSongViewModel(repository, io.mockk.mockk(relaxed = true))
             viewModel.loadMembership("song")
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -82,7 +82,7 @@ class SaveSongViewModelTest {
     @Test
     fun `nothing is written before membership has loaded`() =
         runTest {
-            val viewModel = SaveSongViewModel(repository)
+            val viewModel = SaveSongViewModel(repository, io.mockk.mockk(relaxed = true))
 
             viewModel.toggle(track, "gym")
             testDispatcher.scheduler.advanceUntilIdle()

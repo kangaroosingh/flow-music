@@ -69,6 +69,8 @@ fun EnhancedMusicScreen(
     viewModel: MusicViewModel = sharedMusicViewModel(),
     libraryViewModel: MusicHomeLibraryViewModel = hiltViewModel(),
 ) {
+    val taste: MusicTasteViewModel = hiltViewModel()
+    val reasons by taste.reasons.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsState()
     val ownPlaylists by libraryViewModel.playlists.collectAsStateWithLifecycle()
     val musicSubscriptions by libraryViewModel.subscriptions.collectAsStateWithLifecycle()
@@ -149,104 +151,109 @@ fun EnhancedMusicScreen(
 
     val bottomInsets = LocalFlowBottomInsets.current
 
-    Scaffold(
-        topBar = {
-            FlowTopBar(
-                title = stringResource(R.string.screen_title_music),
-                actions = {
-                    IconButton(onClick = onSearchClick) {
-                        Icon(Icons.Outlined.Search, stringResource(R.string.search))
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            if (showRecognize) {
-                FloatingActionButton(
-                    onClick = onRecognizeClick,
-                    modifier = Modifier.floatAboveBottomChrome(bottomInsets),
-                ) {
-                    Icon(Icons.Rounded.Mic, stringResource(R.string.recognize_music))
-                }
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            val isInitialLoading = uiState.isLoading && uiState.trendingSongs.isEmpty() && uiState.dynamicSections.isEmpty()
-
-            when {
-                isInitialLoading -> {
-                    MusicScreenShimmerLoading()
-                }
-
-                uiState.error != null && uiState.trendingSongs.isEmpty() -> {
-                    FlowErrorState(
-                        error = uiState.error ?: stringResource(R.string.error_occurred),
-                        onRetry = { viewModel.retry() },
-                    )
-                }
-
-                else -> {
-                    val popularArtists =
-                        remember(uiState.trendingSongs, uiState.newReleases) {
-                            (uiState.trendingSongs + uiState.newReleases)
-                                .distinctBy { it.artist }
-                                .take(10)
+    androidx.compose.runtime.CompositionLocalProvider(
+        io.github.aedev.flow.ui.components.music.item.LocalMusicRecommendationReasons provides reasons,
+    ) {
+        Scaffold(
+            topBar = {
+                FlowTopBar(
+                    title = stringResource(R.string.screen_title_music),
+                    actions = {
+                        MusicTasteControls(taste, viewModel::refresh)
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Outlined.Search, stringResource(R.string.search))
                         }
-
-                    // Raw concatenation is only the placeholder until the VM's
-                    // brain-ranked speed dial lands.
-                    val fallbackSpeedDial =
-                        remember(uiState.history, uiState.forYouTracks, uiState.listenAgain) {
-                            (uiState.history + uiState.forYouTracks + uiState.listenAgain)
-                                .audioMusicOnly()
-                                .take(26)
-                        }
-                    val speedDialTracks = uiState.speedDialTracks.ifEmpty { fallbackSpeedDial }
-                    val quickPickTracks =
-                        remember(uiState.forYouTracks) {
-                            uiState.forYouTracks.audioMusicOnly().take(20)
-                        }
-                    val pullState = rememberPullToRefreshState()
-
-                    FlowPullToRefreshBox(
-                        isRefreshing = uiState.isLoading || uiState.homeChipPage?.status == MusicHomeChipStatus.REFRESHING,
-                        onRefresh = { viewModel.refresh() },
-                        state = pullState,
-                        modifier = Modifier.fillMaxSize(),
+                    },
+                )
+            },
+            floatingActionButton = {
+                if (showRecognize) {
+                    FloatingActionButton(
+                        onClick = onRecognizeClick,
+                        modifier = Modifier.floatAboveBottomChrome(bottomInsets),
                     ) {
-                        LazyColumn(
-                            state = musicListState,
+                        Icon(Icons.Rounded.Mic, stringResource(R.string.recognize_music))
+                    }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0.dp),
+        ) { paddingValues ->
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+            ) {
+                val isInitialLoading = uiState.isLoading && uiState.trendingSongs.isEmpty() && uiState.dynamicSections.isEmpty()
+
+                when {
+                    isInitialLoading -> {
+                        MusicScreenShimmerLoading()
+                    }
+
+                    uiState.error != null && uiState.trendingSongs.isEmpty() -> {
+                        FlowErrorState(
+                            error = uiState.error ?: stringResource(R.string.error_occurred),
+                            onRetry = { viewModel.retry() },
+                        )
+                    }
+
+                    else -> {
+                        val popularArtists =
+                            remember(uiState.trendingSongs, uiState.newReleases) {
+                                (uiState.trendingSongs + uiState.newReleases)
+                                    .distinctBy { it.artist }
+                                    .take(10)
+                            }
+
+                        // Raw concatenation is only the placeholder until the VM's
+                        // brain-ranked speed dial lands.
+                        val fallbackSpeedDial =
+                            remember(uiState.history, uiState.forYouTracks, uiState.listenAgain) {
+                                (uiState.history + uiState.forYouTracks + uiState.listenAgain)
+                                    .audioMusicOnly()
+                                    .take(26)
+                            }
+                        val speedDialTracks = uiState.speedDialTracks.ifEmpty { fallbackSpeedDial }
+                        val quickPickTracks =
+                            remember(uiState.forYouTracks) {
+                                uiState.forYouTracks.audioMusicOnly().take(20)
+                            }
+                        val pullState = rememberPullToRefreshState()
+
+                        FlowPullToRefreshBox(
+                            isRefreshing = uiState.isLoading || uiState.homeChipPage?.status == MusicHomeChipStatus.REFRESHING,
+                            onRefresh = { viewModel.refresh() },
+                            state = pullState,
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = flowBottomContentPadding(FeedBottomClearance)),
                         ) {
-                            musicHomeFeed(
-                                uiState = uiState,
-                                sectionOrder = sectionOrder,
-                                quickPickTracks = quickPickTracks,
-                                speedDialTracks = speedDialTracks,
-                                popularArtists = popularArtists,
-                                library = library,
-                                quickPicksGridState = quickPicksGridState,
-                                onSongClick = onSongClick,
-                                onVideoClick = onVideoClick,
-                                onArtistClick = onArtistClick,
-                                onAlbumClick = onAlbumClick,
-                                onMoodsClick = onMoodsClick,
-                                onChipToggle = { viewModel.setHomeChip(it) },
-                                onTrackMenu = musicMenus::openSong,
-                                onCollectionMenu = musicMenus::openCollection,
-                                onLoadMore = { viewModel.loadMoreHomeContent() },
-                                onChipRetry = { viewModel.retryHomeChip() },
-                                onChipLoadMore = { viewModel.loadMoreHomeChip() },
-                            )
+                            LazyColumn(
+                                state = musicListState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = flowBottomContentPadding(FeedBottomClearance)),
+                            ) {
+                                musicHomeFeed(
+                                    uiState = uiState,
+                                    sectionOrder = sectionOrder,
+                                    quickPickTracks = quickPickTracks,
+                                    speedDialTracks = speedDialTracks,
+                                    popularArtists = popularArtists,
+                                    library = library,
+                                    quickPicksGridState = quickPicksGridState,
+                                    onSongClick = onSongClick,
+                                    onVideoClick = onVideoClick,
+                                    onArtistClick = onArtistClick,
+                                    onAlbumClick = onAlbumClick,
+                                    onMoodsClick = onMoodsClick,
+                                    onChipToggle = { viewModel.setHomeChip(it) },
+                                    onTrackMenu = musicMenus::openSong,
+                                    onCollectionMenu = musicMenus::openCollection,
+                                    onLoadMore = { viewModel.loadMoreHomeContent() },
+                                    onChipRetry = { viewModel.retryHomeChip() },
+                                    onChipLoadMore = { viewModel.loadMoreHomeChip() },
+                                )
+                            }
                         }
                     }
                 }

@@ -28,6 +28,15 @@ internal fun NavGraphBuilder.musicRoutes(
     defaultStartRoute: String,
     onMusicStarted: () -> Unit,
 ) {
+    composable("musicLibrary") {
+        currentRoute.value = "musicLibrary"
+        io.github.aedev.flow.ui.screens.playlists.PlaylistsScreen(
+            onBackClick = { navController.navigateToTab(FlowTab.Music, defaultStartRoute) },
+            onVideoPlaylistClick = { mediaNavigator.openMusicPlaylist(it.id) },
+            onMusicPlaylistClick = { mediaNavigator.openMusicPlaylist(it.id) },
+            fixedKind = io.github.aedev.flow.ui.components.shared.MediaKind.Music,
+        )
+    }
     composable("music") {
         currentRoute.value = "music"
 
@@ -41,7 +50,8 @@ internal fun NavGraphBuilder.musicRoutes(
                 onMusicStarted()
             },
             onVideoClick = { track ->
-                playerViewModel.playVideo(track.toVideo())
+                musicPlayerViewModel.loadAndPlayTrack(track, listOf(track), null)
+                onMusicStarted()
             },
             onArtistClick = { channelId ->
                 mediaNavigator.openArtist(channelId)

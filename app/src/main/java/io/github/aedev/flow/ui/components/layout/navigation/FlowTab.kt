@@ -40,10 +40,10 @@ enum class FlowTab(
 ) {
     Home(0, "home", R.string.nav_home),
     Shorts(1, "shorts", R.string.nav_shorts),
-    Music(2, "music", R.string.nav_music),
+    Music(2, "music", R.string.fm_home),
     Subscriptions(3, "subscriptions", R.string.nav_subs),
-    Library(4, "library", R.string.nav_library),
-    Search(5, "search", R.string.nav_search),
+    Library(4, if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) "musicLibrary" else "library", R.string.nav_library),
+    Search(5, if (io.github.aedev.flow.BuildConfig.MUSIC_ONLY) "musicSearch" else "search", R.string.nav_search),
     Explore(6, "categories", R.string.nav_explore),
     Downloads(7, DOWNLOADS_TAB_ROUTE, R.string.nav_downloads),
     ;
@@ -82,7 +82,9 @@ data class NavigationVisibility(
 fun visibleFlowTabs(
     order: List<Int>,
     visibility: NavigationVisibility,
+    musicOnly: Boolean = io.github.aedev.flow.BuildConfig.MUSIC_ONLY,
 ): List<FlowTab> {
+    if (musicOnly) return listOf(FlowTab.Music, FlowTab.Search, FlowTab.Library, FlowTab.Downloads)
     val enabled =
         buildSet {
             if (visibility.home) add(FlowTab.Home)
@@ -104,7 +106,8 @@ fun resolveDefaultFlowTab(
     preferredId: Int,
     order: List<Int>,
     visibility: NavigationVisibility,
+    musicOnly: Boolean = io.github.aedev.flow.BuildConfig.MUSIC_ONLY,
 ): FlowTab {
-    val visible = visibleFlowTabs(order, visibility)
+    val visible = visibleFlowTabs(order, visibility, musicOnly)
     return visible.firstOrNull { it.id == preferredId } ?: visible.first()
 }

@@ -54,9 +54,10 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.aedev.flow"
+        applicationId = "com.kangaroosingh.flowmusic"
         minSdk = 26
         targetSdk = 36
+        buildConfigField("boolean", "MUSIC_ONLY", "true")
         versionCode = 19
         versionName = "3.0.0"
 
@@ -66,7 +67,16 @@ android {
         buildConfigField("String", "LASTFM_API_KEY", "\"${secretValue("lastfmApiKey", "lastfm.apiKey", "LASTFM_API_KEY")}\"")
         buildConfigField("String", "LASTFM_API_SECRET", "\"${secretValue("lastfmApiSecret", "lastfm.apiSecret", "LASTFM_API_SECRET")}\"")
 
-        testInstrumentationRunner = "io.github.aedev.flow.HiltTestRunner"
+        testInstrumentationRunner =
+            if (providers
+                    .gradleProperty(
+                        "musicSmoke",
+                    ).isPresent
+            ) {
+                "androidx.test.runner.AndroidJUnitRunner"
+            } else {
+                "io.github.aedev.flow.HiltTestRunner"
+            }
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -98,7 +108,7 @@ android {
         create("github") {
             dimension = "version"
             isDefault = true
-            buildConfigField("Boolean", "UPDATER_ENABLED", "true")
+            buildConfigField("Boolean", "UPDATER_ENABLED", "false")
             buildConfigField("String", "DISCORD_APPLICATION_ID", "\"1526515771021328514\"")
         }
         create("foss") {

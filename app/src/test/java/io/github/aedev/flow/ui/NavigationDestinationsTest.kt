@@ -36,7 +36,11 @@ class NavigationDestinationsTest {
     @Test
     fun backFromSearchAsTheOpeningTabLandsOnAVisibleTab() {
         val homeHidden =
-            visibleFlowTabs(listOf(5, 0, 3, 4), NavigationVisibility(home = false, shorts = false, music = false, search = true))
+            visibleFlowTabs(
+                listOf(5, 0, 3, 4),
+                NavigationVisibility(home = false, shorts = false, music = false, search = true),
+                musicOnly = false,
+            )
         assertEquals(FlowTab.Search, homeHidden.first())
         assertEquals(FlowTab.Subscriptions, exitTab(homeHidden, FlowTab.Search))
     }
@@ -50,7 +54,7 @@ class NavigationDestinationsTest {
 
     @Test
     fun routesFromOutsideTheGraphResolveToTheirTab() {
-        assertEquals(FlowTab.Search, flowTabForRoute("search", downloadsTab = false))
+        assertEquals(FlowTab.Search, flowTabForRoute(FlowTab.Search.route, downloadsTab = false))
         assertEquals(FlowTab.Music, flowTabForRoute("music", downloadsTab = false))
         listOf("downloads", "history", "musicRecognize", "musicPlayer/abc", "settings").forEach { route ->
             assertNull(flowTabForRoute(route, downloadsTab = false))

@@ -205,7 +205,29 @@ fun MusicTrackItem(
                 }
 
                 Text(
-                    text = track.metadataLine(),
+                    text =
+                        LocalMusicRecommendationReasons.current[track.videoId]?.let { (artist, reason) ->
+                            when (reason) {
+                                io.github.aedev.flow.data.recommendation.music.MusicRecommendationReason.FAMILIAR -> {
+                                    stringResource(
+                                        R.string.fm_because_artist,
+                                        artist,
+                                    )
+                                }
+
+                                io.github.aedev.flow.data.recommendation.music.MusicRecommendationReason.RELATED -> {
+                                    stringResource(
+                                        R.string.fm_related_pick,
+                                    )
+                                }
+
+                                io.github.aedev.flow.data.recommendation.music.MusicRecommendationReason.DISCOVERY -> {
+                                    stringResource(
+                                        R.string.fm_discovery_pick,
+                                    )
+                                }
+                            }
+                        } ?: track.metadataLine(),
                     style = MaterialTheme.typography.bodySmall,
                     color = subtitleColor,
                     maxLines = 1,
