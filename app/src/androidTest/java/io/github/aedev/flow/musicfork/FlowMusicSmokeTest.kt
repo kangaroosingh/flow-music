@@ -49,10 +49,18 @@ class FlowMusicSmokeTest {
 
     private fun activity(): MainActivity {
         assertTrue(context.applicationContext is FlowApplication)
+        val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         val activity =
-            instrumentation.startActivitySync(
-                Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            ) as MainActivity
+            try {
+                context.startActivity(
+                    Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                )
+                checkNotNull(instrumentation.waitForMonitorWithTimeout(monitor, 30_000) as? MainActivity) {
+                    "Music activity did not start"
+                }
+            } finally {
+                instrumentation.removeMonitor(monitor)
+            }
         instrumentation.runOnMainSync {
             if (android.os.Build.VERSION.SDK_INT >= 27) {
                 activity.setShowWhenLocked(true)

@@ -59,4 +59,40 @@ class MusicStorageSmokeTest {
                 first.update { original }
             }
         }
+
+    @Test fun completedDiscoveryLikeUsesPlaybackModeAndOriginalExposure() =
+        runBlocking {
+            val dependencies =
+                dagger.hilt.android.EntryPointAccessors
+                    .fromApplication(context, MusicSmokeDependencies::class.java)
+            val personal = dependencies.personalization()
+            val original = personal.profile.first()
+            val song = MusicTrack("discovery-fixture", "Discovery", "New artist", "", 180)
+            try {
+                personal.update {
+                    io.github.aedev.flow.data.recommendation.music
+                        .MusicRecommendationProfile()
+                }
+                personal.rank(
+                    listOf(song),
+                    io.github.aedev.flow.data.recommendation.music
+                        .MusicBrain(),
+                    "quick_picks",
+                )
+                personal.onStart(song.videoId)
+                personal.onListen(song, 1.0, null, false)
+                personal.update { it.copy(enabled = false) }
+                personal.liked(song, discovery = false)
+                assertEquals(
+                    1,
+                    personal.profile
+                        .first()
+                        .metrics["improved"]
+                        ?.discoveryLikes,
+                )
+                assertEquals(null, personal.profile.first().metrics["original"])
+            } finally {
+                personal.update { original }
+            }
+        }
 }

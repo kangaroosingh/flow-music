@@ -34,6 +34,7 @@ class MusicPersonalization
                 ignoreUnknownKeys = true
                 encodeDefaults = true
             }
+        private val candidateDiscoveries = MutableStateFlow<Map<String, Boolean>>(emptyMap())
         val reasons = MutableStateFlow<Map<String, Pair<String, MusicRecommendationReason>>>(emptyMap())
         val hiddenTracks = MutableStateFlow<Set<String>>(emptySet())
         val profile =
@@ -62,6 +63,7 @@ class MusicPersonalization
 
         suspend fun reset() {
             catalog.invalidate()
+            candidateDiscoveries.value = emptyMap()
             reasons.value = emptyMap()
             update {
                 MusicRecommendationProfile(
@@ -81,7 +83,13 @@ class MusicPersonalization
                 old.copy(
                     recent = (old.recent + id).takeLast(20),
                     sessionModes =
-                        (old.sessionModes + (id to mode))
+                        ((old.sessionModes - id) + (id to mode))
+                            .entries
+                            .toList()
+                            .takeLast(20)
+                            .associate { it.toPair() },
+                    sessionDiscoveries =
+                        ((old.sessionDiscoveries - id) + (id to (candidateDiscoveries.value[id] ?: false)))
                             .entries
                             .toList()
                             .takeLast(20)
@@ -137,7 +145,8 @@ class MusicPersonalization
             track: MusicTrack,
             discovery: Boolean,
         ) = update { old ->
-            val mode = if (old.enabled) "improved" else "original"
+            val mode = old.sessionModes[track.videoId] ?: if (old.enabled) "improved" else "original"
+            val discovered = old.sessionDiscoveries[track.videoId] ?: candidateDiscoveries.value[track.videoId] ?: discovery
             val stats = old.metrics[mode] ?: MusicRecommendationMetrics()
             old.copy(
                 disliked = old.disliked - track.videoId,
@@ -146,7 +155,7 @@ class MusicPersonalization
                     old.metrics + (
                         mode to
                             stats.copy(
-                                discoveryLikes = stats.discoveryLikes + if (discovery) 1 else 0,
+                                discoveryLikes = stats.discoveryLikes + if (discovered) 1 else 0,
                             )
                     ),
             )
@@ -198,6 +207,12 @@ class MusicPersonalization
                         }
                     MusicRankedCandidate(track.videoId, artist, reason, prefs.evidence[track.videoId] ?: MusicCandidateEvidence())
                 }
+            candidateDiscoveries.value =
+                (candidateDiscoveries.value + candidates.associate { it.id to (it.reason != MusicRecommendationReason.FAMILIAR) })
+                    .entries
+                    .toList()
+                    .takeLast(1000)
+                    .associate { it.toPair() }
             val byId = tracks.associateBy { it.videoId }
             if (prefs.enabled) {
                 val labels = candidates.associate { it.id to (byId[it.id]?.artist.orEmpty() to it.reason) }

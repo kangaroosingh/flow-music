@@ -13,6 +13,7 @@ data class MusicRecommendationProfile(
     val disliked: Map<String, String> = emptyMap(),
     val recent: List<String> = emptyList(),
     val sessionModes: Map<String, String> = emptyMap(),
+    val sessionDiscoveries: Map<String, Boolean> = emptyMap(),
     val earlySkips: Map<String, Int> = emptyMap(),
     val evidence: Map<String, MusicCandidateEvidence> = emptyMap(),
     val metrics: Map<String, MusicRecommendationMetrics> = emptyMap(),
