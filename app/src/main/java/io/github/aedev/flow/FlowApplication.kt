@@ -107,6 +107,12 @@ class FlowApplication :
     @Inject
     lateinit var linkedSync: dagger.Lazy<LinkedSync>
 
+    @Inject
+    lateinit var smartDownloadStore: dagger.Lazy<io.github.aedev.flow.data.music.smart.SmartDownloadStore>
+
+    @Inject
+    lateinit var downloadPowerPolicy: dagger.Lazy<io.github.aedev.flow.data.video.downloader.work.DownloadPowerPolicy>
+
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader
 
     companion object {
@@ -191,6 +197,20 @@ class FlowApplication :
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             launch { profileWorkReconciler.reconcile() }
             launch { AutoBackupWorker.keepScheduled(this@FlowApplication) }
+            launch {
+                try {
+                    io.github.aedev.flow.data.music.smart.SmartDownloadWorker.follow(
+                        this@FlowApplication,
+                        smartDownloadStore.get(),
+                        playerPreferences,
+                        downloadPowerPolicy.get(),
+                    )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "Smart download scheduling failed", e)
+                }
+            }
             launch { postSwitchWork.runIfSwitched() }
             BackgroundCheckScheduler.follow(this@FlowApplication, playerPreferences)
         }

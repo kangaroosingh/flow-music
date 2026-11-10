@@ -32,6 +32,7 @@ data class DownloadRequest(
     val subtitle: DownloadSubtitle? = null,
     /** Where that file was written, so deleting the download removes it too. */
     val subtitleFile: String? = null,
+    val smartDownload: Boolean = false,
 ) {
     val videoId: String get() = tags.videoId
     val kind: DownloadKind get() = tags.kind

@@ -41,6 +41,7 @@ class DownloadControllerTest {
     private val dao: DownloadDao = mockk(relaxed = true)
     private val downloads: VideoDownloadManager = mockk(relaxed = true)
     private val preferences: PlayerPreferences = mockk(relaxed = true)
+    private val power = mockk<DownloadPowerPolicy>()
     private val workManager: WorkManager = mockk(relaxed = true)
     private lateinit var controller: DownloadController
 
@@ -56,7 +57,8 @@ class DownloadControllerTest {
         every { WorkManager.getInstance(any()) } returns workManager
         every { downloads.stagingDirectory() } returns folder.root
         every { preferences.downloadOverWifiOnly } returns flowOf(false)
-        controller = DownloadController(context, dao, downloads, preferences)
+        every { power.chargingOnly } returns flowOf(false)
+        controller = DownloadController(context, dao, downloads, preferences, power)
     }
 
     @After
@@ -165,5 +167,17 @@ class DownloadControllerTest {
 
             assertThat(controller.enqueue(request)).isEqualTo(EnqueueOutcome.QUEUED)
             coVerify(exactly = 1) { dao.replaceDownload(any(), any()) }
+        }
+
+    @Test fun `charging only constrains actual file transfers not just suggestion selection`() =
+        runTest {
+            every { power.chargingOnly } returns flowOf(true)
+            val work = slot<OneTimeWorkRequest>()
+            every { workManager.enqueueUniqueWork(any(), any(), capture(work)) } returns mockk(relaxed = true)
+            controller.kick()
+            assertThat(
+                work.captured.workSpec.constraints
+                    .requiresCharging(),
+            ).isTrue()
         }
 }

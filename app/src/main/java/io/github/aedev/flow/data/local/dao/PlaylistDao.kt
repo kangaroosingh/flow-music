@@ -279,6 +279,11 @@ interface PlaylistDao {
     )
     suspend fun getMusicPlaylistStubVideos(): List<VideoEntity>
 
+    @Query(
+        "SELECT DISTINCT v.* FROM videos v INNER JOIN playlist_video_cross_ref r ON v.id = r.videoId INNER JOIN playlists p ON p.id = r.playlistId WHERE p.isMusic = 1 ORDER BY r.addedAt DESC LIMIT :limit",
+    )
+    suspend fun smartDownloadSeeds(limit: Int): List<VideoEntity>
+
     /** Music playlist/album ids whose cover is blank — recompute from the first track after enrichment. */
     @Query("SELECT id FROM playlists WHERE isMusic = 1 AND (thumbnailUrl = '' OR thumbnailUrl IS NULL)")
     suspend fun getMusicPlaylistsMissingThumbnail(): List<String>

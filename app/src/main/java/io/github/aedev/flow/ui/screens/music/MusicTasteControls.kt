@@ -24,6 +24,7 @@ internal fun MusicTasteControls(
     val profile by vm.profile.collectAsStateWithLifecycle()
     var open by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    var showSmartDownloads by remember { mutableStateOf(false) }
     LaunchedEffect(profile?.setupComplete) {
         if (profile?.setupComplete == false) {
             open = true
@@ -55,6 +56,14 @@ internal fun MusicTasteControls(
         ) {
             Text(stringResource(R.string.fm_taste), style = MaterialTheme.typography.headlineSmall)
             Text(stringResource(R.string.fm_local_notice), style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { showSmartDownloads = !showSmartDownloads }) { Text(stringResource(R.string.fm_smart_title)) }
+            if (showSmartDownloads) {
+                SmartDownloadControls(
+                    androidx.hilt.navigation.compose
+                        .hiltViewModel(),
+                )
+                HorizontalDivider()
+            }
             Text(stringResource(R.string.fm_languages), style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val languages =

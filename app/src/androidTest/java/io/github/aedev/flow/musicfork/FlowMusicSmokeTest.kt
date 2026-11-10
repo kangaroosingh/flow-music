@@ -47,7 +47,7 @@ class FlowMusicSmokeTest {
         return future.get(60, TimeUnit.SECONDS)
     }
 
-    private fun activity(): MainActivity {
+    internal fun activity(): MainActivity {
         assertTrue(context.applicationContext is FlowApplication)
         val monitor = instrumentation.addMonitor(MainActivity::class.java.name, null, false)
         val activity =
@@ -70,7 +70,7 @@ class FlowMusicSmokeTest {
         return activity
     }
 
-    private fun screenshot(name: String) {
+    internal fun screenshot(name: String) {
         instrumentation.uiAutomation.takeScreenshot()?.let { bitmap ->
             File(context.filesDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }

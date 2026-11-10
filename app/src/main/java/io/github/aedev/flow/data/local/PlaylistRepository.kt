@@ -8,6 +8,7 @@ import io.github.aedev.flow.data.local.entity.PlaylistVideoCrossRef
 import io.github.aedev.flow.data.local.entity.VideoEntity
 import io.github.aedev.flow.data.model.PlaylistInfo
 import io.github.aedev.flow.data.model.Video
+import io.github.aedev.flow.data.music.model.toMusicTrack
 import io.github.aedev.flow.innertube.YouTube
 import io.github.aedev.flow.utils.relativedate.RelativeUploadDateParser
 import kotlinx.coroutines.flow.Flow
@@ -413,6 +414,9 @@ class PlaylistRepository
 
         fun getSavedMusicPlaylistsFlow(): Flow<List<PlaylistInfo>> =
             playlistDao.getSavedMusicPlaylistsWithCount().map { items -> items.map(PlaylistWithCount::toPlaylistInfo) }
+
+        suspend fun smartDownloadSeeds(limit: Int): List<io.github.aedev.flow.data.music.model.MusicTrack> =
+            playlistDao.smartDownloadSeeds(limit.coerceIn(1, 100)).map { it.toDomain().toMusicTrack() }
 
         suspend fun getSavedVideoPlaylistVideos(): List<Video> = playlistDao.getSavedVideoPlaylistVideos().map { it.toDomain() }
 
